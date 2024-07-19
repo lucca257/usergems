@@ -1,0 +1,48 @@
+services:
+  app:
+    container_name: backend
+    build:
+      context: ./
+      dockerfile: docker/app/Dockerfile
+    working_dir: /var/www/
+    restart: always
+    volumes:
+      - ./:/var/www/
+    depends_on:
+      - db
+  web:
+    container_name: nginx
+    hostname: laravel.localhost
+    build:
+      context: ./
+      dockerfile: docker/web/Dockerfile
+    restart: always
+    tty: true
+    ports:
+      - "80:80"
+    volumes:
+      - ./:/var/www
+    depends_on:
+      - app
+  db:
+    container_name: mysql
+    build:
+      context: ./
+      dockerfile: docker/db/Dockerfile
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./docker/db/dbdata:/var/lib/mysql
+    environment:
+      - MYSQL_DATABASE=laravel
+      - MYSQL_ROOT_PASSWORD=root
+  mailhog:
+    container_name: mailhog
+    image: mailhog/mailhog:latest
+    restart: always
+    tty: true
+    logging:
+      driver: 'none'  # disable saving logs
+    ports:
+      - "1025:1025" # smtp server
+      - "8025:8025" # web ui
