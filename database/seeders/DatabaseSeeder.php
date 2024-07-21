@@ -2,9 +2,11 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Domain\User\DTOs\IntegrationDto;
+use App\Domain\User\Models\User;
 use Illuminate\Database\Seeder;
+
+// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 
 class DatabaseSeeder extends Seeder
 {
@@ -13,11 +15,15 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        $integrations = [
+            new IntegrationDto('stephan@usergems.com', '7S$16U^FmxkdV!1b'),
+            new IntegrationDto('christian@usergems.com', 'Ay@T3ZwF3YN^fZ@M'),
+            new IntegrationDto('joss@usergems.com', 'PK7UBPVeG%3pP9%B'),
+            new IntegrationDto('blaise@usergems.com', 'c0R*4iQK21McwLww'),
+        ];
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        foreach ($integrations as $integration) {
+
+        }
     }
 }
