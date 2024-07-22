@@ -2,7 +2,7 @@
 
 namespace App\Domain\User\DTOs;
 
-use App\Domain\Company\Dtos\CompanyDto;
+use App\Domain\Company\DTOs\CompanyDto;
 use App\Infrastructure\Helpers\BaseDto;
 
 class UserDto extends BaseDto

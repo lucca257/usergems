@@ -2,7 +2,7 @@
 
 namespace App\Domain\User\Actions;
 
-use App\Domain\Company\Dtos\CompanyDto;
+use App\Domain\Company\DTOs\CompanyDto;
 use App\Domain\User\DTOs\UserDto;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Domain\Company\Dtos;
+namespace App\Domain\Company\DTOs;
 
 class CompanyDto
 {
