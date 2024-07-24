@@ -28,6 +28,11 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 # Setup working directory
 WORKDIR /var/www
 
+RUN useradd -r myuser
+RUN chown myuser .
+
+USER myuser
+
 COPY --chown=1000:www-data ./ .
 
 RUN rm -rf html && ln -s public html

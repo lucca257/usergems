@@ -1,5 +1,6 @@
 services:
   app:
+    user: "0"
     container_name: backend
     build:
       context: ./
