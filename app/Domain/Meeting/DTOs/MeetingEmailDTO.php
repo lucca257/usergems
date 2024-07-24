@@ -15,8 +15,7 @@ class MeetingEmailDTO extends BaseDto
         public string $duration,
         public string $title,
         public array $participants,
-        public CompanyDto $company,
-
+        public ?CompanyDto $company,
     ) {
     }
 }
