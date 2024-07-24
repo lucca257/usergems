@@ -2,7 +2,7 @@
 
 namespace App\Domain\Meeting\DTOs;
 
-class MeetingLists
+class MeetingListDTO
 {
     public function __construct(
         public int $currentPage,

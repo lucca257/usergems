@@ -13,10 +13,13 @@ return new class extends Migration {
         Schema::create('meetings', function (Blueprint $table) {
             $table->id();
             $table->string('external_id');
+            $table->foreignId('integration_id')->constrained('integrations')->onDelete('cascade');
             $table->string('title');
+            $table->string('host');
             $table->dateTime('changed');
             $table->dateTime('start');
             $table->dateTime('end');
+            $table->boolean('dispatched')->default(false);
             $table->timestamps();
         });
     }

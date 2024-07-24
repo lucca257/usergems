@@ -39,7 +39,7 @@ class GetUserInfoAction
 
     private function request(string $email): mixed
     {
-        return Cache::remember("user_info_$email", 60 * 5, function () use ($email) {
+        return Cache::remember("user_info_$email", 60 * 30, function () use ($email) {
             $url = env('INTEGRATION_API').self::URL_SUFIX.$email;
             $response = Http::withToken(self::TOKEN)->get($url);
             return $response->object();

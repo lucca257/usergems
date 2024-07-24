@@ -2,9 +2,12 @@
 
 namespace App\Domain\User\DTOs;
 
+use AllowDynamicProperties;
 use App\Domain\Company\DTOs\CompanyDto;
+use App\Domain\Meeting\DTOs\MeetingCountDTO;
 use App\Infrastructure\Helpers\BaseDto;
 
+#[AllowDynamicProperties]
 class UserDto extends BaseDto
 {
     public function __construct(
@@ -14,7 +17,8 @@ class UserDto extends BaseDto
         public ?string $avatar,
         public ?string $title,
         public ?string $linkedin_url,
-        public ?CompanyDto $company
+        public ?CompanyDto $company,
+        public ?MeetingCountDTO $meetingCount = null,
     ) {
     }
 }

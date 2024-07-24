@@ -3,7 +3,7 @@
 namespace App\Domain\Meeting\Actions;
 
 use App\Domain\Meeting\DTOs\MeetingDTO;
-use App\Domain\Meeting\Models\Meetings;
+use App\Domain\Meeting\Models\Meeting;
 use App\Domain\Meeting\Models\Participants;
 use Illuminate\Support\Facades\DB;
 
@@ -12,7 +12,7 @@ class CreateMeetingAction
     public function execute(MeetingDTO $meetingDTO)
     {
         return DB::transaction(function () use ($meetingDTO) {
-            $meeting = Meetings::updateOrCreate(
+            $meeting = Meeting::updateOrCreate(
                 ['external_id' => $meetingDTO->external_id],
                 $meetingDTO->toArray(['accepted', 'rejected'])
             );

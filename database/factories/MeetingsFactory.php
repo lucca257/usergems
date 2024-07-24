@@ -2,11 +2,11 @@
 
 namespace Database\Factories;
 
-use App\Domain\Meeting\Models\Meetings;
+use App\Domain\Meeting\Models\Meeting;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends Factory<Meetings>
+ * @extends Factory<Meeting>
  */
 class MeetingsFactory extends Factory
 {

@@ -3,7 +3,7 @@
 namespace App\Domain\Meeting\Actions;
 
 use App\Domain\Meeting\DTOs\MeetingDTO;
-use App\Domain\Meeting\DTOs\MeetingLists;
+use App\Domain\Meeting\DTOs\MeetingListDTO;
 use App\Domain\User\Models\Integrations;
 use Illuminate\Support\Facades\Http;
 
@@ -11,7 +11,7 @@ class ListMeetingsAction
 {
     private const string URL_SUFIX = 'hiring/calendar-challenge/events?page=';
 
-    public function execute(Integrations $integration, int $page): MeetingLists
+    public function execute(Integrations $integration, int $page): MeetingListDTO
     {
         $meetingData = $this->request($integration, $page);
         $data = [];
@@ -25,11 +25,13 @@ class ListMeetingsAction
                 $meeting->title,
                 $meeting->accepted,
                 $meeting->rejected,
+                $integration->id,
+                $integration->email
             );
         }
 
         $totalPages = ceil($meetingData->total / $meetingData->per_page);
-        return new MeetingLists($page, $totalPages, $data);
+        return new MeetingListDTO($page, $totalPages, $data);
     }
 
     private function request(Integrations $integration, int $page): ?object

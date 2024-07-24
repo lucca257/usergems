@@ -5,6 +5,7 @@ namespace App\Domain\Meeting\Commands;
 use App\Domain\Meeting\Actions\CreateMeetingAction;
 use App\Domain\Meeting\Actions\ListMeetingsAction;
 use App\Domain\User\Models\Integrations;
+use Exception;
 use Illuminate\Console\Command;
 
 class ProcessMeetingsCommand extends Command
@@ -23,36 +24,55 @@ class ProcessMeetingsCommand extends Command
      */
     protected $description = 'Sync meeting integrations';
 
+    private ListMeetingsAction $listMeetingsAction;
+
+    private CreateMeetingAction $createMeetingAction;
+
     /**
      * Execute the console command.
      */
     public function handle(): void
     {
+        $this->createMeetingAction = app(CreateMeetingAction::class);
+        $this->listMeetingsAction = app(ListMeetingsAction::class);
+
+        $startTime = now();
+
         Integrations::chunkById(100, function ($integrations) {
             foreach ($integrations as $integration) {
-                $this->process($integration);
+                $this->processIntegration($integration);
             }
         });
+
+        $duration = $startTime->diffInSeconds(now());
+        $this->info("Sync meetings execution time: {$duration} seconds");
     }
 
-    public function process(Integrations $integration): void
+    private function processIntegration(Integrations $integration): void
     {
         $page = 1;
-        $listMeetingAction = app(ListMeetingsAction::class);
-        $createMeetingAction = app(CreateMeetingAction::class);
 
         while (true) {
-            $data = $listMeetingAction->execute($integration, $page);
+            $data = $this->listMeetingsAction->execute($integration, $page);
 
-            foreach ($data->data as $meeting) {
-                $createMeetingAction->execute($meeting);
-            }
+            $this->processMeetings($data->data);
 
             if ($page === $data->totalPages) {
                 break;
             }
 
             $page++;
+        }
+    }
+
+    private function processMeetings(array $meetings): void
+    {
+        foreach ($meetings as $meeting) {
+            try {
+                $this->createMeetingAction->execute($meeting);
+            } catch (Exception $e) {
+                $this->error("Failed to create meeting id {$meeting->external_id}. Error: {$e->getMessage()}");
+            }
         }
     }
 }
