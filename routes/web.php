@@ -101,7 +101,6 @@ Route::get('', function () {
             $emailMeetingDetails[$participantMail] = $meetingDetails;
         }
 
-        // Relacionar emailMeetingDetails com o loop $meeting->participants
         foreach ($meetings as $meeting) {
             foreach ($meeting->participants as $participant) {
                 if (isset($emailMeetingDetails[$participant->email])) {
@@ -114,8 +113,7 @@ Route::get('', function () {
 
         $dataCollection->push($participantData);
     }
-
-// Exibir resultados para verificação
+    
     dd($dataCollection[0]->meetings);
 
 
