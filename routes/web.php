@@ -30,9 +30,9 @@ Route::get('', function () {
         $duration = $start->diffInSeconds($end);
 
         if ($duration < 3600) {
-            $duration = round($duration / 60)." min";
+            $duration = round($duration / 60) . " min";
         } else {
-            $duration = round($duration / 3600)." hr";
+            $duration = round($duration / 3600) . " hr";
         }
 
         return [
@@ -41,8 +41,8 @@ Route::get('', function () {
             'duration' => $duration
         ];
     }
-    $allParticipants = collect();
 
+    $allParticipants = collect();
 
     foreach ($hostMeetings as $hostEmail => $meetings) {
         $participantData = $participantInfo->execute($hostEmail);
@@ -101,13 +101,22 @@ Route::get('', function () {
             $emailMeetingDetails[$participantMail] = $meetingDetails;
         }
 
-        dd($emailMeetingDetails);
+        // Relacionar emailMeetingDetails com o loop $meeting->participants
+        foreach ($meetings as $meeting) {
+            foreach ($meeting->participants as $participant) {
+                if (isset($emailMeetingDetails[$participant->email])) {
+                    $participant->meetingRelations = $emailMeetingDetails[$participant->email];
+                } else {
+                    $participant->meetingRelations = [];
+                }
+            }
+        }
 
-
-
-        $participantData->company = $company;
         $dataCollection->push($participantData);
     }
+
+// Exibir resultados para verificação
+    dd($dataCollection[0]->meetings);
 
 
 dd($dataCollection[2]->meetings[0]->participants->pluck('email'));
