@@ -13,60 +13,104 @@ use Carbon\Carbon;
 use GuzzleHttp\Promise\Promise;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 
 Route::get('', function () {
-    $meeting = Meeting::with('participants')->first();
+    $hostMeetings = Meeting::all()->groupBy('host');
     $participantInfo = app(GetUserInfoAction::class);
+    $dataCollection = collect();
 
-    $participants = [];
-    $company = null;
+    function formatMeetingDate($meeting): array
+    {
+        $start = \Illuminate\Support\Carbon::parse($meeting->start);
+        $end = Carbon::parse($meeting->end);
 
-    $data = Participants::with('meeting')
-        ->whereIn('email', $meeting->participants->pluck('email'))
-        ->get(['email', 'meeting_id'])
-        ->groupBy('email')
-        ->map(function ($items) use ($participants, $participantInfo) {
-            return $items->count();
-        });
+        $duration = $start->diffInSeconds($end);
 
-    foreach ($meeting->participants as $participant) {
-        $participantData = $participantInfo->execute($participant->email);
-        $participantData->confirmed = $participant->confirmed;
-        $participantData->totalMeetings = $data[$participant->email];
-        $participantData->full_name = $participantData->first_name ? "$participantData->first_name $participantData->last_name" : $participant->email;
-        $participants[] = $participantData;
-        if (!$company && $participantData->company) {
-            $company = $participantData->company;
+        if ($duration < 3600) {
+            $duration = round($duration / 60)." min";
+        } else {
+            $duration = round($duration / 3600)." hr";
         }
+
+        return [
+            'start' => $start->format('h:i A'),
+            'end' => $end->format('h:i A'),
+            'duration' => $duration
+        ];
+    }
+    $allParticipants = collect();
+
+
+    foreach ($hostMeetings as $hostEmail => $meetings) {
+        $participantData = $participantInfo->execute($hostEmail);
+        $company = $participantData->company;
+
+        foreach ($meetings as $meeting) {
+            $datesFormat = formatMeetingDate($meeting);
+            $meeting->start_formated = $datesFormat['start'];
+            $meeting->end_formated = $datesFormat['end'];
+            $meeting->duration = $datesFormat['duration'];
+
+            $meeting->participants = Participants::where('meeting_id', $meeting->id)
+                ->where('email', '!=', $hostEmail)
+                ->get()
+                ->map(function ($participant) use ($participantInfo, &$company, $meeting) {
+                    $participant->info = $participantInfo->execute($participant->email);
+                    $participant->full_name = $participant->info->first_name ?
+                        "{$participant->info->first_name} {$participant->info->last_name}"
+                        : $participant->info->email;
+                    if (!$company && $participant->info->company) {
+                        $company = $participant->info->company;
+                    }
+                    $participant->totalMeetings = Participants::where('email', $participant->email)->count();
+                    return $participant;
+                });
+
+            $allParticipants = $allParticipants->merge($meeting->participants->pluck('email'));
+        }
+
+        $participantData->meetings = $meetings;
+        $participantEmails = $allParticipants->unique();
+
+        $emailMeetingDetails = [];
+
+        foreach ($participantEmails as $participantMail) {
+            $participantMeetings = Participants::where('email', $participantMail)->get();
+
+            $meetingDetails = [];
+
+            foreach ($participantMeetings as $participantMeeting) {
+                $meetingId = $participantMeeting->meeting_id;
+
+                $otherParticipants = Participants::where('meeting_id', $meetingId)
+                    ->where('email', '!=', $participantMail)
+                    ->pluck('email')
+                    ->toArray();
+
+                foreach ($otherParticipants as $otherParticipant) {
+                    if (!isset($meetingDetails[$otherParticipant])) {
+                        $meetingDetails[$otherParticipant] = 0;
+                    }
+                    $meetingDetails[$otherParticipant]++;
+                }
+            }
+
+            $emailMeetingDetails[$participantMail] = $meetingDetails;
+        }
+
+        dd($emailMeetingDetails);
+
+
+
+        $participantData->company = $company;
+        $dataCollection->push($participantData);
     }
 
-    $start = \Illuminate\Support\Carbon::parse($meeting->start);
-    $end = Carbon::parse($meeting->end);
 
-    $duration = $start->diffInSeconds($end);
+dd($dataCollection[2]->meetings[0]->participants->pluck('email'));
 
-    if ($duration < 3600) {
-        $duration = round($duration / 60)." min";
-    } else {
-        $duration = round($duration / 3600)." hr";
-    }
-
-    $meetingDTO = new MeetingEmailDTO(
-        $meeting->host,
-        $meeting->changed,
-        $start->format('h:i A'),
-        $end->format('h:i A'),
-        $duration,
-        $meeting->title,
-        $participants,
-        $company
-    );
-
-    return new MeetingDetailEmailJob($meetingDTO);
-
-    dd(Mail::to("example@mail.com")
-        ->sendNow(new MeetingDetailEmailJob($meetingDTO)));
 
 });
