@@ -98,42 +98,42 @@
         </a>
         <h1>Your Morning Update</h1>
     </div>
-    <div class="meeting">
-        <div class="time">{{"$start - $end"}} | <u>{{ $title }}</u> ({{$duration}})</div>
-        <div class="meeting-info">
-            <p>Joining from UserGems: {{$host}}</p>
-            <div>
-                <span><b><u>{{$company->name}}</u></b></span>
-                <a href="{{$company->linkedin_url}}" class="linkedin">
-                    <i class="fa fa-linkedin-square" aria-hidden="true"></i>
-                </a>
-                <i class="fa fa-users" aria-hidden="true">&nbsp;{{$company->employees}}</i>
-            </div>
-
-        </div>
-    </div>
-
-    @foreach($participants as $participant)
-        <div class="participant">
-            <img src="{{$participant->avatar ?? 'https://ohsobserver.com/wp-content/uploads/2022/12/Guest-user.png'}}"
-                 alt="{{$participant->full_name}}">
-            <div>
-                <div class="name">{{$participant->full_name}}
-                    @if($participant->confirmed)
-                        <i class="fa fa-check-circle" aria-hidden="true" style="color:green;"></i>
-                    @else
-                        <i class="fa fa-times-circle" aria-hidden="true" style="color:red;"></i>
-                    @endif
-                    @if($participant->linkedin_url)
-                        <a href="{{$participant->linkedin_url}}" class="linkedin">
-                            <i class="fa fa-linkedin-square" aria-hidden="true"></i>
-                        </a>
-                    @endif
+    @foreach($meetings as $meeting)
+        <div class="meeting">
+            <div class="time">{{"$meeting->start - $meeting->end"}} | <u>{{ $meeting->title }}</u> ({{$meeting->duration}})</div>
+            <div class="meeting-info">
+                <p>Joining from UserGems: {{$meeting->host}}</p>
+                <div>
+                    <span><b><u>{{$company->name}}</u></b></span>
+                    <a href="{{$company->linkedin_url}}" class="linkedin">
+                        <i class="fa fa-linkedin-square" aria-hidden="true"></i>
+                    </a>
+                    <i class="fa fa-users" aria-hidden="true">&nbsp;{{$company->employees}}</i>
                 </div>
-                <div class="position">{{$participant->title}}</div>
-                <div>{{$participant->totalMeetings ?? 0}}th Meeting</div>
             </div>
         </div>
+        @foreach($meeting->participants as $participant)
+            <div class="participant">
+                <img src="{{$participant->info->avatar ?? 'https://ohsobserver.com/wp-content/uploads/2022/12/Guest-user.png'}}"
+                     alt="{{$participant->full_name}}">
+                <div>
+                    <div class="name">{{$participant->full_name}}
+                        @if($participant->confirmed)
+                            <i class="fa fa-check-circle" aria-hidden="true" style="color:green;"></i>
+                        @else
+                            <i class="fa fa-times-circle" aria-hidden="true" style="color:red;"></i>
+                        @endif
+                        @if($participant->info->linkedin_url)
+                            <a href="{{$participant->info->linkedin_url}}" class="linkedin">
+                                <i class="fa fa-linkedin-square" aria-hidden="true"></i>
+                            </a>
+                        @endif
+                    </div>
+                    <div class="position">{{$participant->info->title}}</div>
+                    <div>{{$participant->totalMeetings}}th Meeting</div>
+                </div>
+            </div>
+        @endforeach
     @endforeach
 </div>
 </body>

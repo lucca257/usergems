@@ -2,14 +2,14 @@
 
 namespace App\Domain\Meeting\Commands;
 
-use App\Domain\Meeting\DTOs\MeetingEmailDTO;
 use App\Domain\Meeting\Jobs\MeetingDetailEmailJob;
 use App\Domain\Meeting\Models\Meeting;
 use App\Domain\Meeting\Models\Participants;
 use App\Domain\User\Actions\GetUserInfoAction;
+use App\Domain\User\DTOs\UserDto;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 class SendMeetingEmailsCommand extends Command
@@ -36,35 +36,59 @@ class SendMeetingEmailsCommand extends Command
     public function handle(): void
     {
         $this->participantInfo = app(GetUserInfoAction::class);
+        $hostMeetings = Meeting::all()->groupBy('host');
 
-        Meeting::with('participants')->dispatch()->chunkById(100, function ($meetings) {
-            foreach ($meetings as $meeting) {
-                $this->process($meeting);
-            }
-        });
-    }
-
-    private function process(Meeting $meeting): void
-    {
-        $participants = [];
-        $company = null;
-
-        $countParticipantsInMeetings = $this->countParticipantsInMeetings($meeting->participants->pluck('email'));
-
-        foreach ($meeting->participants as $participant) {
-            $participantData = $this->participantInfo->execute($participant->email);
-            $participantData->confirmed = $participant->confirmed;
-            $participantData->totalMeetings = $countParticipantsInMeetings[$participant->email];
-            $participantData->full_name = $participantData->first_name ? "$participantData->first_name $participantData->last_name" : $participant->email;
-
-            $participants[] = $participantData;
-
-            if (!$company && $participantData->company) {
-                $company = $participantData->company;
+        foreach ($hostMeetings as $hostEmail => $meetings) {
+            try {
+                $data = $this->process($hostEmail, $meetings);
+                $this->sendMail($data);
+            } catch (\Exception $e) {
+                Log::error($e);
             }
         }
 
-        $start = Carbon::parse($meeting->start);
+    }
+
+    private function sendMail(UserDto $data) {
+        Mail::to($data->email)
+            ->send(new MeetingDetailEmailJob($data));
+
+        Meeting::whereIn('id', $data->meetings->pluck('id'))
+            ->update(['dispatched' => true]);
+    }
+
+    private function process($hostEmail, $meetings)
+    {
+        $participantData = $this->participantInfo->execute($hostEmail);
+        $company = $participantData->company;
+        foreach ($meetings as $meeting) {
+            $datesFormat = $this->formatMeetingDate($meeting);
+            $meeting->start_formated = $datesFormat['start'];
+            $meeting->end_formated = $datesFormat['end'];
+            $meeting->duration = $datesFormat['duration'];
+
+            $meeting->participants = Participants::where('meeting_id', $meeting->id)
+                ->get()
+                ->map(function ($participant) use (&$company) {
+                    $participant->info = $this->participantInfo->execute($participant->email);
+                    $participant->full_name = $participant->info->first_name ?
+                        "{$participant->info->first_name} {$participant->info->last_name}"
+                        : $participant->info->email;
+                    if (!$company && $participant->info->company) {
+                        $company = $participant->info->company;
+                    }
+                    $participant->totalMeetings = Participants::where('email', $participant->email)->count();
+                    return $participant;
+                });
+        }
+        $participantData->meetings = $meetings;
+        $participantData->company = $company;
+        return $participantData;
+    }
+
+    private function formatMeetingDate($meeting): array
+    {
+        $start = \Illuminate\Support\Carbon::parse($meeting->start);
         $end = Carbon::parse($meeting->end);
 
         $duration = $start->diffInSeconds($end);
@@ -75,32 +99,10 @@ class SendMeetingEmailsCommand extends Command
             $duration = round($duration / 3600)." hr";
         }
 
-        $meetingDTO = new MeetingEmailDTO(
-            $meeting->host,
-            $meeting->changed,
-            $start->format('h:i A'),
-            $end->format('h:i A'),
-            $duration,
-            $meeting->title,
-            $participants,
-            $company
-        );
-
-        Mail::to($meeting->host)
-            ->send(new MeetingDetailEmailJob($meetingDTO));
-
-        $meeting->dispatched = true;
-        $meeting->save();
-    }
-
-    private function countParticipantsInMeetings(Collection $emails)
-    {
-        return Participants::with('meeting')
-            ->whereIn('email', $emails)
-            ->get(['email', 'meeting_id'])
-            ->groupBy('email')
-            ->map(function ($items) {
-                return $items->count();
-            });
+        return [
+            'start' => $start->format('h:i A'),
+            'end' => $end->format('h:i A'),
+            'duration' => $duration
+        ];
     }
 }

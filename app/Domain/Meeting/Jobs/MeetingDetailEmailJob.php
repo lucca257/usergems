@@ -3,6 +3,7 @@
 namespace App\Domain\Meeting\Jobs;
 
 use App\Domain\Meeting\DTOs\MeetingEmailDTO;
+use App\Domain\User\DTOs\UserDto;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Attachment;
@@ -17,7 +18,7 @@ class MeetingDetailEmailJob extends Mailable
     /**
      * Create a new message instance.
      */
-    public function __construct(private readonly MeetingEmailDTO $meetingDTO)
+    public function __construct(private readonly UserDto $dto)
     {
     }
 
@@ -27,7 +28,7 @@ class MeetingDetailEmailJob extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: $this->meetingDTO->title,
+            subject: $this->dto->title,
         );
     }
 
@@ -38,7 +39,7 @@ class MeetingDetailEmailJob extends Mailable
     {
         return new Content(
             view: 'mail.meeting.list',
-            with: $this->meetingDTO->toArray()
+            with: $this->dto->toArray()
         );
     }
 
