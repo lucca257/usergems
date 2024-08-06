@@ -68,6 +68,7 @@ class SendMeetingEmailsCommand extends Command
             $meeting->duration = $datesFormat['duration'];
 
             $meeting->participants = Participants::where('meeting_id', $meeting->id)
+                ->where('email', '!=', $hostEmail)
                 ->get()
                 ->map(function ($participant) use (&$company) {
                     $participant->info = $this->participantInfo->execute($participant->email);
