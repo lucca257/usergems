@@ -130,7 +130,22 @@
                         @endif
                     </div>
                     <div class="position">{{$participant->info->title}}</div>
-                    <div>{{$participant->totalMeetings}}th Meeting</div>
+                    <div>
+                        <span>
+                            {{$participant->totalMeetings}}th Meeting
+                        </span>
+                        @if($participant->meetingWith)
+                            <span>
+                                | Met with
+                                @foreach($participant->meetingWith as $email => $total)
+                                    {{$email}} ({{$total}}x)
+                                    @if (!$loop->last)
+                                        &
+                                    @endif
+                                @endforeach
+                            </span>
+                        @endif
+                    </div>
                 </div>
             </div>
         @endforeach
