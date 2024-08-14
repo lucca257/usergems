@@ -36,7 +36,7 @@ class SendMeetingEmailsCommand extends Command
     public function handle(): void
     {
         $this->participantInfo = app(GetUserInfoAction::class);
-        $hostMeetings = Meeting::all()->groupBy('host');
+        $hostMeetings = Meeting::dispatch()->get()->groupBy('host');
 
         foreach ($hostMeetings as $hostEmail => $meetings) {
             try {
