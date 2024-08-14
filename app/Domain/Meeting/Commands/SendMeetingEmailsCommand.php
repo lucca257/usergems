@@ -40,7 +40,7 @@ class SendMeetingEmailsCommand extends Command
     public function handle(): void
     {
         $this->participantInfo = app(GetUserInfoAction::class);
-        $hostMeetings = Meeting::all()->groupBy('host');
+        $hostMeetings = Meeting::dispatch()->get()->groupBy('host');
         $this->hostEmails = array_keys($hostMeetings->toArray());
 
         foreach ($hostMeetings as $hostEmail => $meetings) {
@@ -57,7 +57,7 @@ class SendMeetingEmailsCommand extends Command
     private function sendMail(UserDto $data) {
         Mail::to($data->email)
             ->send(new MeetingDetailEmailJob($data));
-        dd($data->email);
+
         Meeting::whereIn('id', $data->meetings->pluck('id'))
             ->update(['dispatched' => true]);
     }
